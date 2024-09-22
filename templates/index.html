@@ -1,0 +1,121 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Управление почтовыми аккаунтами</h1>
+
+    {% if mail_accounts %}
+        <h2>Ваши почтовые аккаунты:</h2>
+        <table class="table table-hover">
+            <thead class="table-secondary">
+                <tr>
+                    <th scope="col">Логин</th>
+                    <th scope="col">Сервис</th>
+                    <th scope="col">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in mail_accounts %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('get_messages') }}?account_id={{ account.id }}">
+                            {{ account.login }}
+                        </a>
+                    </td>
+                    <td>{{ account.service.name }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="showDeleteModal({{ account.id }}, '{{ account.login }}')">Удалить</button>
+                        <button class="btn btn-primary btn-sm" onclick="fetchMessages({{ account.id }})">Получить сообщения</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>У вас пока нет добавленных почтовых аккаунтов.</p>
+    {% endif %}
+
+    <a href="{{ url_for('create_account_form') }}" class="btn btn-primary mt-3">Добавить новый аккаунт</a>
+</div>
+
+<!-- Модальное окно для подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить аккаунт <span id="accountToDelete"></span>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let accountIdToDelete;
+
+function showDeleteModal(accountId, accountLogin) {
+    accountIdToDelete = accountId;
+    document.getElementById('accountToDelete').textContent = accountLogin;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    fetch('/delete_login/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({account_id: accountIdToDelete})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            location.reload(); // Перезагрузка страницы после успешного удаления
+        } else {
+            alert('Ошибка при удалении аккаунта');
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при удалении аккаунта');
+    });
+});
+
+function fetchMessages(accountId) {
+    localStorage.setItem('fetchProgress_' + accountId, '0'); // Reset progress
+    updateProgressBar(accountId, 0);
+    fetch(`/fetch_messages/?account_id=${accountId}`, {
+        method: 'GET',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            console.log("Запущена выборка сообщений для учетной записи", accountId);
+        } else {
+            alert('Ошибка при запуске получения сообщений');
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при запуске получения сообщений');
+    });
+}
+
+// Инициализация всех Bootstrap компонентов
+document.addEventListener('DOMContentLoaded', function() {
+    var deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        new bootstrap.Modal(deleteModal);
+    }
+});
+</script>
+{% endblock %}

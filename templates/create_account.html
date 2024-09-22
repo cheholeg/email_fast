@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Создать новый аккаунт</h2>
+    <form id="create-account-form">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" id="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" class="form-control" id="password" required>
+        </div>
+        {% if services %}
+            <div class="form-group">
+                <label for="service">Сервис:</label>
+                <select class="form-control" id="service" required>
+                    <option value="">Выберите сервис</option>
+                    {% for service in services %}
+                    <option value="{{ service.name }}">{{ service.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Создать аккаунт</button>
+        <button type="button" id="add-new-service-btn" class="btn btn-secondary">Добавить новый сервис</button>
+    </form>
+</div>
+
+<!-- Модальное окно для добавления нового сервиса -->
+<div id="newServiceModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Добавить новый сервис</h3>
+        </div>
+        <form id="new-service-form">
+            <div class="form-group">
+                <label for="new_service_name">Название нового сервиса:</label>
+                <input type="text" class="form-control" id="new_service_name" name="new_service_name" required>
+            </div>
+            <div class="form-group">
+                <label for="new_imap_server">IMAP сервер:</label>
+                <input type="text" class="form-control" id="new_imap_server" name="new_imap_server" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="save-new-service-btn" class="btn btn-primary">Сохранить</button>
+                <button type="button" id="cancel-new-service-btn" class="btn btn-secondary">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+
+document.getElementById('create-account-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const serviceName = document.getElementById('service').value;
+
+    fetch('/create_login/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: email,
+            password: password,
+            service_name: serviceName
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('error-message').textContent = data.error;
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+        } else if (data.success) {
+            document.getElementById('success-message').textContent = data.success;
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('create-account-form').reset();
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        document.getElementById('error-message').textContent = 'Произошла ошибка при создании аккаунта';
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('success-message').style.display = 'none';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+
+    const addNewServiceBtn = document.getElementById('add-new-service-btn');
+    const newServiceModal = document.getElementById('newServiceModal');
+    const newServiceForm = document.getElementById('new-service-form');
+    const saveNewServiceBtn = document.getElementById('save-new-service-btn');
+    const cancelNewServiceBtn = document.getElementById('cancel-new-service-btn');
+    const serviceSelect = document.getElementById('service');
+
+    addNewServiceBtn.addEventListener('click', function() {
+        console.log('Add New Service button clicked');
+        newServiceModal.style.display = 'block';
+    });
+
+    cancelNewServiceBtn.addEventListener('click', function() {
+        console.log('Cancel button clicked');
+        newServiceModal.style.display = 'none';
+        newServiceForm.reset();
+    });
+
+    saveNewServiceBtn.addEventListener('click', function() {
+        console.log('Save New Service button clicked');
+        const newServiceName = document.getElementById('new_service_name').value;
+        const newImapServer = document.getElementById('new_imap_server').value;
+
+        console.log('New Service Name:', newServiceName);
+        console.log('New IMAP Server:', newImapServer);
+
+        if (newServiceName && newImapServer) {
+            // Отправляем AJAX запрос для сохранения нового сервиса
+            fetch('/create_service/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: newServiceName,
+                    imap_server: newImapServer
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.log('Error:', data.error);
+                    alert(data.error);
+                } else {
+                    console.log('Success:', data.message);
+                    // Добавляем новый сервис в список существующих
+                    const newOption = new Option(newServiceName, newServiceName);
+                    serviceSelect.add(newOption);
+                    serviceSelect.value = newServiceName;
+
+                    // Закрываем модальное окно и очищаем форму
+                    newServiceModal.style.display = 'none';
+                    newServiceForm.reset();
+                    alert(data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при сохранении сервиса');
+            });
+        } else {
+            console.log('Validation failed');
+            alert('Пожалуйста, заполните все поля для нового сервиса.');
+        }
+    });
+
+    // Закрытие модального окна при клике вне его
+    window.onclick = function(event) {
+        if (event.target == newServiceModal) {
+            console.log('Clicked outside modal');
+            newServiceModal.style.display = 'none';
+            newServiceForm.reset();
+        }
+    }
+});
+</script>
+{% endblock content %}
+
+{% block styles %}
+<style>
+    .container {
+        margin-top: 2rem;
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .btn {
+        margin-top: 0.5rem;
+    }
+    #newServiceModal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+    }
+    .modal-header {
+        margin-bottom: 1rem;
+    }
+    .modal-footer {
+        margin-top: 1rem;
+    }
+</style>
+{% endblock styles %}

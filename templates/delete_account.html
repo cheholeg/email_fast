@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Удаление аккаунта</h2>
+    
+    {% if account %}
+        <p>Вы уверены, что хотите удалить аккаунт {{ account.login }}?</p>
+        <form action="{{ url_for('delete_account') }}" method="post">
+            <input type="hidden" name="account_id" value="{{ account.id }}">
+            <button type="submit" class="btn btn-danger">Подтвердить удаление</button>
+            <a href="{{ url_for('root') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    {% else %}
+        <p>Аккаунт не найден.</p>
+        <a href="{{ url_for('root') }}" class="btn btn-primary">Вернуться на главную</a>
+    {% endif %}
+</div>
+{% endblock %}

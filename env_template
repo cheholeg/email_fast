@@ -1,0 +1,20 @@
+# Настройки базы данных
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+
+Секретный ключ для JWT
+SECRET_KEY=your_secret_key_here
+
+# Алгоритм JWT
+ALGORITHM=HS256
+
+# Раскомментируйте и задайте их, если вы хотите использовать PostgreSQL
+# Если не задано, приложение будет использовать SQLite
+# POSTGRES_DB_HOST=localhost
+# POSTGRES_DB_PORT=5432
+# POSTGRES_DB_NAME=your_postgres_db_name
+# POSTGRES_DB_USER=your_postgres_user
+# POSTGRES_DB_PASSWORD=your_postgres_password
