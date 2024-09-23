@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+active_fetch_processes = {}
+
 # Функция для запуска задачи fetch_messages
 async def start_fetch_messages(mail_account_id: int):
     return await fetch_messages(mail_account_id)
@@ -33,7 +35,11 @@ async def fetch_messages(mail_account_id: int):
 
 
         if not mail_account:
-            return {"status": "error", "message": "Account not found"}
+            await broadcast_status(mail_account_id, "error", "Аккаунт не найден")
+            return
+
+        await broadcast_status(mail_account_id, "started", f"Запущено")
+
         if not mail_account.service:
             return {"status": "error", "message": "Mail service not found for this account"}
         imap_server = mail_account.service.imap_server
@@ -50,7 +56,7 @@ async def fetch_messages(mail_account_id: int):
                 status, msg_data = mail.fetch(email_id, "(RFC822)")
 
                 progress = int((index + 1) / total_emails * 100)
-                await broadcast_progress(mail_account.id, progress)
+                await broadcast_progress(mail_account.id, progress, mail_account.login)
 
                 for response_part in msg_data:
                     if isinstance(response_part, tuple):
@@ -138,17 +144,30 @@ async def fetch_messages(mail_account_id: int):
                         db.add(mail_message)
 
                 await db.commit()
-            logger.info(f"Finished processing emails for account {mail_account_id}")
+            await broadcast_status(mail_account_id, "completed",
+                                       f"Завершено")
             mail.logout()
             return {"status": "success", "message": "Messages fetched successfully"}
         except Exception as e:
             logger.error(f"Error fetching messages: {str(e)}", exc_info=True)
             return {"status": "error", "message": str(e)}
+        finally:
+            if mail_account_id in active_fetch_processes:
+                del active_fetch_processes[mail_account_id]
 
-async def broadcast_progress(account_id: int, progress: int):
+async def broadcast_progress(account_id: int, progress: int, account_name: str):
     logger.debug(f"Broadcasting progress: account_id={account_id}, progress={progress}")
     await manager.broadcast(json.dumps({
         "type": "send_progress",
         "account_id": account_id,
-        "progress": progress
+        "progress": progress,
+        "account_name": account_name
+    }))
+
+async def broadcast_status(account_id: int, status: str, message: str):
+    await manager.broadcast(json.dumps({
+        "type": "fetch_status",
+        "account_id": account_id,
+        "status": status,
+        "message": message
     }))
