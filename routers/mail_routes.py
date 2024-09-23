@@ -8,7 +8,7 @@ from fastapi.requests import Request
 from core.models import MailMessage, MailAccount
 from core.schemas import MailMessageRequest
 from database import get_db, templates, get_async_db
-from services.mail_service import start_fetch_messages
+from services.mail_service import start_fetch_messages, active_fetch_processes
 
 router = APIRouter()
 
@@ -61,6 +61,8 @@ def get_messages(request: Request, mail_request: MailMessageRequest = Depends(),
 
 @router.get("/fetch_messages/")
 async def fetch_messages(account_id: int, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_async_db)):
+    if account_id in active_fetch_processes:
+        return {"status": "error", "message": "Получение почты уже выполняется для этого аккаунта"}
     mail_account = await db.get(MailAccount, account_id)
     if not mail_account:
         raise HTTPException(status_code=404, detail="Account not found")
@@ -68,4 +70,4 @@ async def fetch_messages(account_id: int, background_tasks: BackgroundTasks, db:
     # Запускаем задачу в фоновом режиме
     background_tasks.add_task(start_fetch_messages, account_id)
 
-    return JSONResponse(content={"message": "Message fetching process started"})
+    return JSONResponse(content={"message": "Запущен процесс получения сообщений"})

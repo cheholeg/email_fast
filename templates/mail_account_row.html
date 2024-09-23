@@ -1,0 +1,38 @@
+<tr>
+    <td>{{ account.login }}</td>
+    <td>
+        <a href="{{ url_for('get_messages') }}?account_id={{ account.id }}">
+            {{ account.login }}
+        </a>
+    </td>
+    <td>
+        <button class="btn btn-danger btn-sm" onclick="showDeleteModal({{ account.id }}, '{{ account.login }}')">Удалить</button>
+        <button class="btn btn-primary btn-sm" onclick="fetchMessages({{ account.id }})">Получить сообщения</button>
+    </td>
+</tr>
+<script>
+    function fetchMessages(accountId) {
+        localStorage.setItem('fetchProgress_' + accountId, '0'); // Reset progress
+        updateProgressBar(accountId, 0);
+        fetch(`/fetch_messages/?account_id=${accountId}`, {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                console.log("Запущена выборка сообщений для учетной записи", accountId);
+            } else {
+                alert('Ошибка при запуске получения сообщений');
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при запуске получения сообщений');
+        });
+    }
+
+    function updateProgressBar(accountId, progress) {
+        // Implement progress bar update logic here
+        console.log(`Updating progress for account ${accountId}: ${progress}%`);
+    }
+</script>
