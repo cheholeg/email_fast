@@ -1,0 +1,33 @@
+{% extends "import_email/base.html" %}
+{% block content %}
+    <table class="table table-hover">
+        <thead class="table-secondary-nohover">
+        <tr>
+            <th scope="col">Логин</th>
+            <th scope="col">Почта</th>
+        </tr>
+        </thead>
+        <tbody id="mail_account-list">
+        {% for mail in mail_account %}
+            <tr>
+                <td>{{ mail.login }}</td>
+                <td>
+                    <a href="{% url 'import_email:messages' %}?receiver={{ mail.receiver }}">
+                        {{ mail.receiver }}
+                    </a>
+                </td>
+                <td>
+                    <a href="{% url 'import_email:fetch_messages' %}?receiver={{ mail.receiver }}">
+                        Выгрузить почту
+                    </a>
+                </td>
+                <td>
+                    <a href="{% url 'import_email:delete_login' %}?receiver={{ mail.receiver }}">
+                        Удалить
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock content %}
