@@ -1,0 +1,25 @@
+<script>
+    
+    function getWebSocketUrl() {
+        const location = window.location;
+        const ws_protocol = location.protocol == "https:" ? "wss://" : "ws://";
+        return ws_protocol + window.location.host + "/ws/progress/";
+    }
+    var socket = new WebSocket(getWebSocketUrl());
+    socket.onopen = function(event) {
+        console.log("WebSocket соединение установлено");
+    };
+
+    socket.onerror = function(error) {
+        console.error("WebSocket ошибка: ", error);
+    };
+    socket.onmessage = function(event) {
+        var data = JSON.parse(event.data);
+        document.getElementById("progress-bar").style.width = data.progress + "%";
+        document.getElementById("progress-text").innerText = data.progress + "%";
+    };
+</script>
+<div id="progress-container">
+    <div id="progress-bar" style="width: 0%; background-color: blue; height: 30px;"></div>
+    <p id="progress-text">0%</p>
+</div>

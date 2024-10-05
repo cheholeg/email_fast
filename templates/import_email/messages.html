@@ -1,0 +1,54 @@
+{% extends "import_email/base.html" %}
+{% block content %}
+    <table class="table table-hover">
+        <thead class="table-secondary-nohover">
+        <tr>
+            <th scope="col">Тема</th>
+            <th scope="col">Sent Date</th>
+            <th scope="col">Received Date</th>
+            <th scope="col">Сообщение</th>
+            <th scope="col">Файлы</th>
+        </tr>
+        </thead>
+        <tbody id="mail_account-list">
+        {% for message in messages %}
+            <tr>
+                <td>{{ message.subject }}</td>
+                <td>{{ message.sent_date|date:"DATE_FORMAT" }}</td>
+                <td>{{ message.received_date|date:"DATE_FORMAT" }}</td>
+
+                <td>
+                    <div class="card">
+                        <div class="card-header" id="headingRelated">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link font-weight-bold collapsed"
+                                        data-toggle="collapse"
+                                        data-target="#collapseRelated-{{ message.message_id }}"
+                                        aria-expanded="false"
+                                        aria-controls="collapseRelated">Сообщение</button>
+                            </h5>
+                        </div>
+                        <div id="collapseRelated-{{ message.message_id }}"
+                             class="collapse"
+                             aria-labelledby="headingRelated"
+                             data-parent="#accordion">
+                            <div class="card-body">
+                                {{ message.text|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if message.files %}
+                        {% for file in message.files %}
+                            {{ file.filename }}
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock content %}
